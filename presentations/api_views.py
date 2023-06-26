@@ -41,7 +41,6 @@ def api_list_presentations(request, conference_id):
                 {"message": "Invalid conference id"},
                 status=400,
             )
-        # something here is causing an error with the create function
         presentation = Presentation.create(**content)
         return JsonResponse(
             presentation,
