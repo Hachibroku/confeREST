@@ -5,9 +5,46 @@ from common.json import ModelEncoder
 from django.views.decorators.http import require_http_methods
 
 
+class LocationListEncoder(ModelEncoder):
+    model = Location
+    properties = ["name"]
+
+
+class LocationDetailEncoder(ModelEncoder):
+    model = Location
+    properties = [
+        "name",
+        "city",
+        "room_count",
+        "created",
+        "updated",
+    ]
+
+    def get_extra_data(self, o):
+        return {"state": o.state.abbreviation}
+
+
 class ConferenceListEncoder(ModelEncoder):
     model = Conference
     properties = ["name"]
+
+
+class ConferenceDetailEncoder(ModelEncoder):
+    model = Conference
+    properties = [
+        "name",
+        "description",
+        "max_presentations",
+        "max_attendees",
+        "starts",
+        "ends",
+        "created",
+        "updated",
+        "location",
+    ]
+    encoders = {
+        "location": LocationListEncoder(),
+    }
 
 
 @require_http_methods(["GET", "POST"])
@@ -36,50 +73,33 @@ def api_list_conferences(request):
         )
 
 
+@require_http_methods(["DELETE", "GET", "PUT"])
 def api_show_conference(request, id):
-    conference = Conference.objects.get(id=id)
-    return JsonResponse(
-        conference,
-        encoder=ConferenceDetailEncoder,
-        safe=False,
-    )
-
-
-class LocationListEncoder(ModelEncoder):
-    model = Location
-    properties = ["name"]
-
-
-class ConferenceDetailEncoder(ModelEncoder):
-    model = Conference
-    properties = [
-        "name",
-        "description",
-        "max_presentations",
-        "max_attendees",
-        "starts",
-        "ends",
-        "created",
-        "updated",
-        "location",
-    ]
-    encoders = {
-        "location": LocationListEncoder(),
-    }
-
-
-class LocationDetailEncoder(ModelEncoder):
-    model = Location
-    properties = [
-        "name",
-        "city",
-        "room_count",
-        "created",
-        "updated",
-    ]
-
-    def get_extra_data(self, o):
-        return {"state": o.state.abbreviation}
+    if request.method == "GET":
+        conference = Conference.objects.get(id=id)
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
+    elif request.method == "DELETE":
+        count, _ = Conference.objects.filter(id=id).delete()
+        return JsonResponse({"deleted": count > 0})
+    else:
+        content = json.loads(request.body)
+        try:
+            if "conference" in content:
+                conference = Conference.objects.get(id=content["conference"])
+                content["conference"] = conference
+        except Conference.DoesNotExist:
+            return JsonResponse({"message": "Invalid conference ID"})
+        Conference.objects.filter(id=id).update(**content)
+        conference = Conference.objects.get(id=id)
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
 
 
 @require_http_methods(["GET", "POST"])

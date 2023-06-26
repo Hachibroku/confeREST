@@ -35,6 +35,13 @@ class Presentation(models.Model):
     synopsis = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
+    @classmethod
+    def create(cls, **kwargs):
+        kwargs["status"] = Status.objects.get(name="SUBMITTED")
+        presentation = cls(**kwargs)
+        presentation.save()
+        return presentation
+
     status = models.ForeignKey(
         Status,
         related_name="presentations",
