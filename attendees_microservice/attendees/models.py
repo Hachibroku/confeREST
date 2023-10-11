@@ -42,3 +42,11 @@ class Badge(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+
+
+class AccountVO(models.Model):
+    email = models.EmailField()
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    is_active = models.BooleanField(default=False)
+    updated = models.DateTimeField(auto_now_add=True)
